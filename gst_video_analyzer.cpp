@@ -7,8 +7,10 @@
 #include "gst_video_analyzer.h"
 #include "wrapper.h"
 
-GST_DEBUG_CATEGORY_STATIC(video_analyzer_debug);
-#define GST_CAT_DEFAULT video_analyzer_debug
+#define ELEMENT_NAME video_analyzer
+
+GST_DEBUG_CATEGORY_STATIC(gst_video_analyzer_debug);
+#define GST_CAT_DEFAULT gst_video_analyzer_debug
 
 enum
 {
@@ -16,6 +18,8 @@ enum
   PROP_DRAW_MARKUP,
   PROP_MODEL_PATH,
 };
+
+G_DEFINE_TYPE (GstVideoAnalyzer, gst_video_analyzer, GST_TYPE_VIDEO_FILTER);
 
 static GstStaticPadTemplate video_analyzer_src_template =
 GST_STATIC_PAD_TEMPLATE ("src",
@@ -76,11 +80,7 @@ static void gst_video_analyzer_get_property (GObject * object, guint prop_id, GV
     GST_OBJECT_UNLOCK (video_analyzer);
 }
 
-void video_analyzer_before_transform(GstBaseTransform *trans, GstBuffer *buffer) {
-    //OCV analysis;
-}
-
-GstFlowReturn video_analyzer_transform_frame_ip(GstVideoFilter* vfilter, GstVideoFrame *frame) {
+GstFlowReturn gst_video_analyzer_transform_frame_ip(GstVideoFilter* vfilter, GstVideoFrame *frame) {
     auto* analyzer = GST_VIDEO_ANALYZER(vfilter);
     auto* engine = (VideoAnalyzerWrapper*)analyzer->engine;
     engine->analyzeFrame(frame);
@@ -98,16 +98,14 @@ static void gst_video_analyzer_finalize(GObject* g_object) {
     GST_OBJECT_UNLOCK (video_analyzer);
 }
 
-static void gst_video_analyzer_class_init (GstVideoAnalyzerClass* g_class) {
-    GST_DEBUG_CATEGORY_INIT(video_analyzer_debug, "video_analyzer", 0, "video_analyzer");
-
+static void gst_video_analyzer_class_init(GstVideoAnalyzerClass* g_class) {
     auto* gobject_class = G_OBJECT_CLASS(g_class);
     gobject_class->set_property = gst_video_analyzer_set_property;
     gobject_class->get_property = gst_video_analyzer_get_property;
 
     const auto property_flags = GParamFlags(GST_PARAM_CONTROLLABLE | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE);
-    g_object_class_install_property(gobject_class, PROP_DRAW_MARKUP, g_param_spec_boolean ("draw markup", "Draw Markup", "draw markup", TRUE, property_flags));
-    g_object_class_install_property(gobject_class, PROP_MODEL_PATH, g_param_spec_string ("model path", "Model Path", "model path", "", property_flags));
+    g_object_class_install_property(gobject_class, PROP_DRAW_MARKUP, g_param_spec_boolean ("drawmarkup", "Draw Markup", "draw markup", TRUE, property_flags));
+    g_object_class_install_property(gobject_class, PROP_MODEL_PATH, g_param_spec_string ("modelpath", "Model Path", "model path", "", property_flags));
 
     auto* gstelement_class = GST_ELEMENT_CLASS(g_class);
     gst_element_class_add_static_pad_template (gstelement_class, &video_analyzer_sink_template);
@@ -115,12 +113,17 @@ static void gst_video_analyzer_class_init (GstVideoAnalyzerClass* g_class) {
 
     auto* trans_class = GST_BASE_TRANSFORM_CLASS(g_class);
     trans_class->transform_ip_on_passthrough = FALSE;
-    trans_class->before_transform = video_analyzer_before_transform;
     
     auto* vfilter_class = GST_VIDEO_FILTER_CLASS(g_class);
     vfilter_class->transform_frame_ip = nullptr;
 
     gobject_class->finalize = gst_video_analyzer_finalize;
+
+      gst_element_class_set_static_metadata (gstelement_class,
+    "An example plugin",
+    "Example/FirstExample",
+    "Shows the basic structure of a plugin",
+    "your name <your.name@your.isp>");
 }
 
 static void gst_video_analyzer_init(GstVideoAnalyzer* video_analyzer) {
@@ -129,4 +132,22 @@ static void gst_video_analyzer_init(GstVideoAnalyzer* video_analyzer) {
     video_analyzer->engine = new VideoAnalyzerWrapper();
 }
 
-G_DEFINE_TYPE (GstVideoAnalyzer, gst_video_analyzer, GST_TYPE_VIDEO_FILTER);
+static gboolean video_analyzer_init(GstPlugin* video_analyzer) {
+    GST_DEBUG_CATEGORY_INIT (gst_video_analyzer_debug, G_STRINGIFY(ELEMENT_NAME), 0, "Video analyzer");
+
+    return gst_element_register(video_analyzer, G_STRINGIFY(ELEMENT_NAME), GST_RANK_NONE, GST_TYPE_VIDEO_ANALYZER);
+}
+
+#ifndef PACKAGE
+#define PACKAGE "OCV filters"
+#endif
+
+GST_PLUGIN_DEFINE (GST_VERSION_MAJOR,
+    GST_VERSION_MINOR,
+    ELEMENT_NAME,
+    "Video analyzer plugin",
+    video_analyzer_init,
+    "0.1",
+    "LGPL",
+    "GStreamer",
+    "http://gstreamer.net/");

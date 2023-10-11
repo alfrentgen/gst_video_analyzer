@@ -17,7 +17,7 @@ pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
 file(GLOB SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 file(GLOB HDR ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 
-set(TARGET_NAME gst_video_analyzer)
+set(TARGET_NAME video_analyzer)
 
 add_library(${TARGET_NAME} SHARED ${SRC} ${HDR})
 target_include_directories(${TARGET_NAME} PRIVATE ${OpenCV_INCLUDE_DIRS} ${GSTREAMER_INCLUDE_DIRS} ${GST_APP_INCLUDE_DIRS})
