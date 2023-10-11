@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(OpenCV REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
-pkg_check_modules(GST_APP REQUIRED gstreamer-app-1.0)
+#pkg_check_modules(GST_APP REQUIRED gstreamer-app-1.0)
 
 # Link directories
 #link_directories(${OpenCV_LIBRARY_DIRS})

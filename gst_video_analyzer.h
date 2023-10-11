@@ -21,7 +21,12 @@ struct _GstVideoAnalyzer
     GstVideoFilter base_video_filter;
     GstPad * sinkpad;
     GstPad * srcpad;
+    
     gboolean markup_drawing_enabled;
+    GString* model_path;
+
+    void* engine;
+
 };
 
 struct _GstVideoAnalyzerClass
