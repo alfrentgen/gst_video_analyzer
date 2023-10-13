@@ -1,7 +1,7 @@
 #ifndef _VIDEO_ANALYZER_H_
 #define _VIDEO_ANALYZER_H_
 
-#include <stdio.h>
+#include <optional>
 #include <opencv2/opencv.hpp>
 
 class Box {
@@ -17,18 +17,18 @@ public:
     {}
 };
 
-namespace dnn = cv::dnn;
-
 class VideoAnalyzer {
 public:
-    VideoAnalyzer() = default;
+    VideoAnalyzer() {
+        net.reset();
+    };
     ~VideoAnalyzer() = default;;
     
     void setModel(const std::string& model_path);
     void highlightBoxes(cv::Mat& img, std::vector<Box>& boxes);
-    void analyzeFrame(std::vector<uint8_t>& rgb_8bit_data, uint32_t width, uint32_t height, bool draw_detected);
+    void analyzeFrame(const std::vector<uint8_t>& rgb_8bit_data, uint32_t width, uint32_t height);
 private:
-    std::optional<dnn::Net> net;
+    std::optional<cv::dnn::Net> net;
 };
 
 #endif

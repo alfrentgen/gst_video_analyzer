@@ -21,10 +21,15 @@ public:
     }
 
 void analyzeFrame(const GstVideoFrame* frame) {
-    auto* pixels = GST_VIDEO_FRAME_PLANE_DATA(frame, 0);
+    auto* pixels = reinterpret_cast<uint8_t*>(GST_VIDEO_FRAME_PLANE_DATA(frame, 0));
     auto stride = GST_VIDEO_FRAME_PLANE_STRIDE (frame, 0);
-    auto pixel_stride = GST_VIDEO_FRAME_COMP_PSTRIDE (frame, 0);
-    //analyzer.analyzeFrame(pixels, ,);
+    auto width = GST_VIDEO_FRAME_WIDTH(frame);
+    auto height = GST_VIDEO_FRAME_HEIGHT(frame);
+    assert(GST_VIDEO_FRAME_FORMAT(frame) == GST_VIDEO_FORMAT_RGB);
+    std::vector<uint8_t> pixel_vector;
+    pixel_vector.reserve(stride * height);
+    pixel_vector.insert(pixel_vector.begin(), pixels, pixels + stride * height);
+    analyzer.analyzeFrame(pixel_vector, width, height);
 }
 
 void drawMarkup(GstVideoFrame* frame) {

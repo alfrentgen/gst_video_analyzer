@@ -23,3 +23,5 @@ add_library(${TARGET_NAME} SHARED ${SRC} ${HDR})
 target_include_directories(${TARGET_NAME} PRIVATE ${OpenCV_INCLUDE_DIRS} ${GSTREAMER_INCLUDE_DIRS} ${GST_APP_INCLUDE_DIRS})
 
 target_link_libraries(${TARGET_NAME} ${OpenCV_LIBRARIES} ${GSTREAMER_LIBRARIES} ${GST_APP_LIBRARIES})
+
+add_subdirectory(tests)
