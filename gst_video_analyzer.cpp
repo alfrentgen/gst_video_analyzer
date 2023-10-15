@@ -45,7 +45,6 @@ static void gst_video_analyzer_set_property (GObject * object, guint prop_id, co
             GST_DEBUG_OBJECT (video_analyzer, "Markup drawing: %s", video_analyzer->markup_drawing_enabled ? "enabled" : "disabled");
             break;
         case PROP_MODEL_PATH: {
-            GST_OBJECT_LOCK (video_analyzer);
             auto* model_path = g_value_get_string(value);
             g_string_assign(video_analyzer->model_path, model_path);
             auto* engine = (VideoAnalyzerWrapper*)video_analyzer->engine;            

@@ -85,8 +85,8 @@ main (int   argc,
 
 
   /* Check input arguments */
-  if (argc != 2) {
-    g_printerr ("Usage: %s <Video filename>\n", argv[0]);
+  if (argc < 2 || argc > 3) {
+    g_printerr ("Usage: %s <Video file name> [Model file path]\n", argv[0]);
     return -1;
   }
 
@@ -111,9 +111,12 @@ main (int   argc,
   }
 
   /* Set up the pipeline */
+  if(argc > 2) {
+    g_object_set(analyzer, "modelpath", argv[2], NULL);
+  }
 
   /* we set the input filename to the source element */
-  g_object_set (G_OBJECT (source), "location", argv[1], NULL);
+  g_object_set(G_OBJECT (source), "location", argv[1], NULL);
 
   /* we add a message handler */
   bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));

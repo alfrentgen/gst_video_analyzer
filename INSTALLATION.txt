@@ -1,0 +1,10 @@
+﻿Prerequisites:
+1) clone https://github.com/alfrentgen/gst_video_analyzer.git
+2) Follow the instructions to install OCV library:
+https://opencv.org/get-started/
+https://docs.opencv.org/4.x/d0/d3d/tutorial_general_install.html
+in either way or use OCV system package. Version 4.8 shall be used.
+3) cmake -GNinja -DOCV_PATH=/media/alf/storage/workspace/neurus/ocv_install -DOpenCV_DIR=/media/alf/storage/workspace/neurus/ocv_install/lib/cmake/opencv4 ..
+4) Model files to test:
+https://github.com/AlexeyAB/darknet/blob/master/cfg/yolov4-tiny.cfg, https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4-tiny.weights
+

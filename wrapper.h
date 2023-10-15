@@ -1,12 +1,13 @@
 #ifndef _VIDEO_ANALYZER_WRAPPER_H_
 #define _VIDEO_ANALYZER_WRAPPER_H_
 
+#include <cstring>
 #include <gst/gst.h>
 #include "video_analyzer.h"
 
 class VideoAnalyzerWrapper {
 public:
-    gint setModel(const gchar* model_path) {
+    gboolean setModel(const gchar* model_path) {
         try {
             analyzer.setModel(std::string(model_path));
         } catch(const cv::Exception& e) {
@@ -26,10 +27,11 @@ void analyzeFrame(const GstVideoFrame* frame) {
     auto width = GST_VIDEO_FRAME_WIDTH(frame);
     auto height = GST_VIDEO_FRAME_HEIGHT(frame);
     assert(GST_VIDEO_FRAME_FORMAT(frame) == GST_VIDEO_FORMAT_RGB);
-    std::vector<uint8_t> pixel_vector;
+    std::vector<uchar> pixel_vector;
     pixel_vector.reserve(stride * height);
     pixel_vector.insert(pixel_vector.begin(), pixels, pixels + stride * height);
     analyzer.analyzeFrame(pixel_vector, width, height);
+    std::memcpy(pixels, pixel_vector.data(), pixel_vector.size());
 }
 
 void drawMarkup(GstVideoFrame* frame) {

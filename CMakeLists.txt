@@ -4,8 +4,12 @@ project(video_analyzer)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(OpenCV REQUIRED)
+#option(OCV_PATH "OCV installation path")
+#set(OCV_PATH /media/alf/storage/workspace/neurus/ocv_install)
+
 find_package(PkgConfig REQUIRED)
+find_package(OpenCV REQUIRED PATHS ${OpenCV_DIR})
+
 pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.0)
 #pkg_check_modules(GST_APP REQUIRED gstreamer-app-1.0)
 

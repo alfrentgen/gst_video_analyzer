@@ -24,9 +24,9 @@ public:
     };
     ~VideoAnalyzer() = default;;
     
-    void setModel(const std::string& model_path);
+    void setModel(const std::string model_path);
     void highlightBoxes(cv::Mat& img, std::vector<Box>& boxes);
-    void analyzeFrame(const std::vector<uint8_t>& rgb_8bit_data, uint32_t width, uint32_t height);
+    void analyzeFrame(std::vector<uchar>& rgb_8bit_data, uint32_t width, uint32_t height);
 private:
     std::optional<cv::dnn::Net> net;
 };
