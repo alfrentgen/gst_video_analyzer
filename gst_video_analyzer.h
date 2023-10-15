@@ -22,7 +22,7 @@ struct _GstVideoAnalyzer
     GstPad * sinkpad;
     GstPad * srcpad;
     
-    gboolean markup_drawing_enabled;
+    gboolean draw_detections;
     GString* model_path;
 
     void* engine;

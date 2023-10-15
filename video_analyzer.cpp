@@ -5,38 +5,36 @@
 
 void VideoAnalyzer::setModel(const std::string model_path) {
     try {
-        net = cv::dnn::readNetFromDarknet(model_path + "/model.cfg", model_path + "/model.weights");
+        m_net = cv::dnn::readNetFromDarknet(model_path + "/model.cfg", model_path + "/model.weights");
     } catch(const cv::Exception& e) {
-        net.reset();
+        m_net.reset();
         throw e;
     }
 
-    net->setPreferableBackend(cv::dnn::DNN_TARGET_CPU);
-    net->setPreferableTarget(cv::dnn::DNN_TARGET_CPU);
+    m_net->setPreferableBackend(cv::dnn::DNN_TARGET_CPU);
+    m_net->setPreferableTarget(cv::dnn::DNN_TARGET_CPU);
 }
 
-void drawPred(int classId, float conf, int left, int top, int right, int bottom, cv::Mat& frame)
+void drawDetection(int classId, float conf, int left, int top, int right, int bottom, cv::Mat& frame)
 {
-    using namespace cv;
-    rectangle(frame, cv::Point(left, top), Point(right, bottom), Scalar(0, 255, 0));
+    cv::rectangle(frame, cv::Point(left, top), cv::Point(right, bottom), cv::Scalar(0, 255, 0), 2);
 
-    std::string label = format("%.2f", conf);
-    if (!class_names.empty())
-    {
+    std::string label = cv::format("%.2f", conf);
+    if (!class_names.empty()) {
         label = (classId < class_names.size() ? class_names[classId] : "Unknown") + ": " + label;
     }
 
     int baseLine;
-    Size labelSize = getTextSize(label, FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
+    cv::Size labelSize = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseLine);
 
-    top = max(top, labelSize.height);
-    rectangle(frame, Point(left, top - labelSize.height),
-              Point(left + labelSize.width, top + baseLine), Scalar::all(255), FILLED);
-    putText(frame, label, Point(left, top), FONT_HERSHEY_SIMPLEX, 0.5, Scalar());
+    top = std::max(top, labelSize.height);
+    rectangle(frame, cv::Point(left, top - labelSize.height), cv::Point(left + labelSize.width, top + baseLine), cv::Scalar::all(255), cv::FILLED);
+    putText(frame, label, cv::Point(left, top), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar());
 }
 
-void VideoAnalyzer::analyzeFrame(std::vector<uchar>& rgb_8bit_data, uint32_t frame_width, uint32_t frame_height) {
-    if(!net.has_value()) {
+void VideoAnalyzer::analyzeFrame(const std::vector<uchar>& rgb_8bit_data, uint32_t frame_width, uint32_t frame_height) {
+    m_detections.clear();
+    if(!m_net.has_value()) {
         return;
     }
 
@@ -48,47 +46,47 @@ void VideoAnalyzer::analyzeFrame(std::vector<uchar>& rgb_8bit_data, uint32_t fra
     auto frame = cv::Mat(frame_height, frame_width, CV_8UC3, (void*)rgb_8bit_data.data());
     auto blob = cv::dnn::blobFromImage(frame, 1.0 / 255, cv::Size(desired_width, desired_width), cv::Scalar(0,0,0), true, false);
 
-    net->setInput(blob);
-    auto out_layer_names = net->getUnconnectedOutLayersNames();
+    m_net->setInput(blob);
+    auto out_layer_names = m_net->getUnconnectedOutLayersNames();
     std::vector<cv::Mat> detections;
-    net->forward(detections, out_layer_names);
+    m_net->forward(detections, out_layer_names);
 
-    static std::string outLayerType = net->getLayer(out_layer_names[0])->type;
+    static std::string outLayerType = m_net->getLayer(out_layer_names[0])->type;
     assert(outLayerType == "Region");
     if (outLayerType == "Region") {
-        std::vector<int> classIds;
-        std::vector<float> confidences;
-        std::vector<cv::Rect> boxes;
         for (const auto& detection : detections) {
             // Network produces output blob with a shape NxC where N is a number of
             // detected objects and C is a number of classes + 4 where the first 4
             // numbers are [center_x, center_y, width, height]
-            float* data = (float*)detection.data;
+            auto* data = (float*)detection.data;
             for (int j = 0; j < detection.rows; ++j, data += detection.cols)
             {
                 cv::Mat scores = detection.row(j).colRange(5, detection.cols);
                 cv::Point classIdPoint;
                 double confidence;
                 minMaxLoc(scores, 0, &confidence, 0, &classIdPoint);
-                if (confidence > 0.5)
-                {
-                    int centerX = (int)(data[0] * frame_width);
-                    int centerY = (int)(data[1] * frame_height);
-                    int width = (int)(data[2] * frame_width);
-                    int height = (int)(data[3] * frame_height);
-                    int left = centerX - (width / 2);
-                    int top = centerY - (height / 2);
-
-                    classIds.push_back(classIdPoint.x);
-                    confidences.push_back((float)confidence);
-                    boxes.push_back(cv::Rect(left, top, width, height));
-                }
+                m_detections.push_back(detection_t {data[0], data[1], data[2], data[3], static_cast<float>(confidence), classIdPoint.x});
             }
         }
-        for (size_t idx = 0; idx < boxes.size(); ++idx) {
-            auto& box = boxes[idx];
-            drawPred(classIds[idx], confidences[idx], box.x, box.y,
-                    box.x + box.width, box.y + box.height, frame);
+    }
+}
+
+const std::vector<detection_t>& VideoAnalyzer::getDetections() const {
+    return m_detections;
+}
+
+void VideoAnalyzer::drawDetections(std::vector<uchar>& rgb_8bit_data, uint32_t frame_width, uint32_t frame_height, double conf_threshold) {
+    auto frame = cv::Mat(frame_height, frame_width, CV_8UC3, (void*)rgb_8bit_data.data());
+    for(const auto& d : m_detections) {
+        auto& [centerX, centerY, width, height, conf, class_id] = d;
+        if (conf > conf_threshold) {
+            int c_x = (int)(centerX * frame_width);
+            int c_y = (int)(centerY * frame_height);
+            int w = (int)(width * frame_width);
+            int h = (int)(height * frame_height);
+            int x = c_x - (w / 2);
+            int y = c_y - (h / 2);
+            drawDetection(class_id, conf, x, y, x + w, y + h, frame);
         }
     }
 }

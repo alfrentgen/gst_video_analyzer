@@ -4,31 +4,30 @@
 #include <optional>
 #include <opencv2/opencv.hpp>
 
-class Box {
-public:
-    int x1, y1, x2, y2;
-    float conf;
-    Box(int x1, int y1, int x2,  int y2, float conf) :
-        x1{x1},
-        y1{y1},
-        x2{x2},
-        y2{y2},
-        conf{conf}
-    {}
-};
+typedef struct {
+    float centerX;
+    float centerY;
+    float width;
+    float height;
+    float confidence;
+    int class_id;
+} detection_t;
 
 class VideoAnalyzer {
 public:
     VideoAnalyzer() {
-        net.reset();
+        m_net.reset();
     };
     ~VideoAnalyzer() = default;;
     
     void setModel(const std::string model_path);
-    void highlightBoxes(cv::Mat& img, std::vector<Box>& boxes);
-    void analyzeFrame(std::vector<uchar>& rgb_8bit_data, uint32_t width, uint32_t height);
+    void analyzeFrame(const std::vector<uchar>& rgb_8bit_data, uint32_t frame_width, uint32_t frame_height);
+    const std::vector<detection_t>& getDetections() const ;
+    void drawDetections(std::vector<uchar>& rgb_8bit_data, uint32_t frame_width, uint32_t frame_height, double conf_threshold = 0.33);
+
 private:
-    std::optional<cv::dnn::Net> net;
+    std::optional<cv::dnn::Net> m_net;
+    std::vector<detection_t> m_detections;
 };
 
 #endif

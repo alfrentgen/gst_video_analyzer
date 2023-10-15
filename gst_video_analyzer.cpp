@@ -41,8 +41,8 @@ static void gst_video_analyzer_set_property (GObject * object, guint prop_id, co
     GST_OBJECT_LOCK (video_analyzer);
     switch (prop_id) {
         case PROP_DRAW_MARKUP:
-            video_analyzer->markup_drawing_enabled = g_value_get_boolean(value);
-            GST_DEBUG_OBJECT (video_analyzer, "Markup drawing: %s", video_analyzer->markup_drawing_enabled ? "enabled" : "disabled");
+            video_analyzer->draw_detections = g_value_get_boolean(value);
+            GST_DEBUG_OBJECT (video_analyzer, "Markup drawing: %s", video_analyzer->draw_detections ? "enabled" : "disabled");
             break;
         case PROP_MODEL_PATH: {
             auto* model_path = g_value_get_string(value);
@@ -50,7 +50,7 @@ static void gst_video_analyzer_set_property (GObject * object, guint prop_id, co
             auto* engine = (VideoAnalyzerWrapper*)video_analyzer->engine;            
             if (engine->setModel(model_path) == FALSE) {
                 GST_DEBUG_OBJECT(video_analyzer, "Model setting failed due to: %s. Enable bypassing, since filter has no model now.", engine->getExceptionMessage());
-                video_analyzer->markup_drawing_enabled = FALSE;
+                video_analyzer->draw_detections = FALSE;
             }
             break;
         }
@@ -66,7 +66,7 @@ static void gst_video_analyzer_get_property (GObject * object, guint prop_id, GV
     GST_OBJECT_LOCK (video_analyzer);
     switch (prop_id) {
         case PROP_DRAW_MARKUP:
-            g_value_set_boolean (value, video_analyzer->markup_drawing_enabled);
+            g_value_set_boolean (value, video_analyzer->draw_detections);
             break;
         case PROP_MODEL_PATH:
             g_value_set_string(value, video_analyzer->model_path->str);
@@ -81,10 +81,7 @@ static void gst_video_analyzer_get_property (GObject * object, guint prop_id, GV
 GstFlowReturn gst_video_analyzer_transform_frame_ip(GstVideoFilter* vfilter, GstVideoFrame *frame) {
     auto* analyzer = GST_VIDEO_ANALYZER(vfilter);
     auto* engine = (VideoAnalyzerWrapper*)analyzer->engine;
-    engine->analyzeFrame(frame);
-    if (analyzer->markup_drawing_enabled) {
-        engine->drawMarkup(frame);
-    }
+    engine->analyzeFrame(frame, analyzer->draw_detections);
     return GST_FLOW_OK;
 }
 
@@ -124,7 +121,7 @@ static void gst_video_analyzer_class_init(GstVideoAnalyzerClass* g_class) {
 }
 
 static void gst_video_analyzer_init(GstVideoAnalyzer* video_analyzer) {
-    video_analyzer->markup_drawing_enabled = TRUE;
+    video_analyzer->draw_detections = TRUE;
     video_analyzer->model_path = g_string_new("");
     video_analyzer->engine = new VideoAnalyzerWrapper();
 }
