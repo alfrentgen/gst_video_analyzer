@@ -5,8 +5,8 @@
 #include <opencv2/opencv.hpp>
 
 typedef struct {
-    float centerX;
-    float centerY;
+    float center_x;
+    float center_y;
     float width;
     float height;
     float confidence;

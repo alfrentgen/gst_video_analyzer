@@ -78,10 +78,10 @@ const std::vector<detection_t>& VideoAnalyzer::getDetections() const {
 void VideoAnalyzer::drawDetections(std::vector<uchar>& rgb_8bit_data, uint32_t frame_width, uint32_t frame_height, double conf_threshold) {
     auto frame = cv::Mat(frame_height, frame_width, CV_8UC3, (void*)rgb_8bit_data.data());
     for(const auto& d : m_detections) {
-        auto& [centerX, centerY, width, height, conf, class_id] = d;
+        auto& [center_x, center_y, width, height, conf, class_id] = d;
         if (conf > conf_threshold) {
-            int c_x = (int)(centerX * frame_width);
-            int c_y = (int)(centerY * frame_height);
+            int c_x = (int)(center_x * frame_width);
+            int c_y = (int)(center_y * frame_height);
             int w = (int)(width * frame_width);
             int h = (int)(height * frame_height);
             int x = c_x - (w / 2);

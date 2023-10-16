@@ -1,3 +1,6 @@
+#ifndef _CLASS_NAMES_H_
+#define _CLASS_NAMES_H_
+
 #include<string>
 #include<vector>
 
@@ -83,3 +86,5 @@ static const std::vector<std::string> class_names {
 "hair drier",
 "toothbrush",
 };
+
+#endif
