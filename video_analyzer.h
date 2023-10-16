@@ -1,8 +1,8 @@
 #ifndef _VIDEO_ANALYZER_H_
 #define _VIDEO_ANALYZER_H_
 
-#include <opencv2/opencv.hpp>
 #include <optional>
+#include <opencv2/opencv.hpp>
 
 typedef struct
 {
@@ -22,8 +22,7 @@ public:
         m_net.reset();
     };
     ~VideoAnalyzer() = default;
-    ;
-
+    
     void setModel(const std::string model_path);
     void analyzeFrame(const std::vector<uchar>& rgb_8bit_data, uint32_t frame_width, uint32_t frame_height);
     const std::vector<detection_t>& getDetections() const;
