@@ -2,6 +2,7 @@
 #define _VIDEO_ANALYZER_WRAPPER_H_
 
 #include <cstring>
+#include <exception>
 #include <gst/gst.h>
 
 #include "video_analyzer.h"
@@ -15,13 +16,13 @@ public:
         try {
             analyzer.setModel(std::string(model_path));
         }
-        catch (const cv::Exception& e) {
+        catch (const std::exception& e) {
             exception_message = e.what();
             return FALSE;
         }
         return TRUE;
     }
-    
+
     const gchar* getExceptionMessage()
     {
         return exception_message.c_str();
@@ -34,13 +35,13 @@ public:
         auto width = GST_VIDEO_FRAME_WIDTH(frame);
         auto height = GST_VIDEO_FRAME_HEIGHT(frame);
         assert(GST_VIDEO_FRAME_FORMAT(frame) == GST_VIDEO_FORMAT_RGB);
-        
+
         std::vector<uchar> pixel_vector;
         pixel_vector.reserve(stride * height);
         pixel_vector.insert(pixel_vector.begin(), pixels, pixels + stride * height);
-        
+
         analyzer.analyzeFrame(pixel_vector, width, height);
-        
+
         if (draw_detection) {
             analyzer.drawDetections(pixel_vector, width, height);
             std::memcpy(pixels, pixel_vector.data(), pixel_vector.size());
@@ -67,9 +68,9 @@ public:
         return analyzer.getDetections();
     }
 
-    private:
-        VideoAnalyzer analyzer;
-        std::string exception_message;
+private:
+    VideoAnalyzer analyzer;
+    std::string exception_message;
 };
 
 #endif

@@ -1,14 +1,58 @@
-#include <iostream>
+#include <exception>
+#include <stdexcept>
+#include <fstream>
+#include <filesystem>
+#include <regex>
 
 #include "video_analyzer.h"
 #include "class_names.h"
 
-void VideoAnalyzer::setModel(const std::string model_path)
+static std::optional<std::pair<uint32_t, uint32_t>> parseInputSizeDarknetConfig(const std::string& config)
 {
-    try {
-        m_net = cv::dnn::readNetFromDarknet(model_path + "/model.cfg", model_path + "/model.weights");
+    std::optional<std::pair<uint32_t, uint32_t>> result;
+    bool re_res{};
+    const std::string title = R"(\[net\])";
+    if (std::smatch sm; std::regex_search(config, sm, std::regex(R"(\[net\])"))) {
+        auto begin = config.begin() + sm.position() + title.size();
+        re_res = std::regex_search(begin, config.end(), sm, std::regex(R"(\[.*\])"));
+        auto end = re_res ? config.begin() + sm.position() : config.end();
+
+        re_res = false;
+        std::pair<uint32_t, uint32_t> sizes;
+        if (re_res = std::regex_search(begin, end, sm, std::regex(R"(width=(\d+))")); re_res) {
+            throw std::out_of_range("");
+            sizes.first = std::stoul(sm[1]);
+        }
+        if (re_res &= std::regex_search(begin, end, sm, std::regex(R"(height=(\d+))")); re_res) {
+            sizes.second = std::stoul(sm[1]);
+        }
+        if (re_res)
+            result = sizes;
     }
-    catch (const cv::Exception& e) {
+    return result;
+}
+
+void VideoAnalyzer::setModel(const std::string model_dir)
+{
+    const std::filesystem::path config_path(model_dir + "/model.cfg");
+    std::string config;
+    try {
+        std::vector<char> buffer(1024, 0);
+        for (std::ifstream config_file(config_path, std::ios::binary); config_file;) {
+            config_file.read(buffer.data(), sizeof(buffer.size()));
+            config.insert(config.end(), buffer.begin(), buffer.begin() + config_file.gcount());
+        }
+        if (auto sizes = parseInputSizeDarknetConfig(config); sizes) {
+            std::pair<uint32_t&, uint32_t&>{m_input_width, m_input_height} = *sizes;
+        }
+        else {
+            throw std::invalid_argument("Could not parse net width/height. Check the config file.");
+        }
+
+        const std::filesystem::path weights_path = model_dir + "/model.weights";
+        m_net = cv::dnn::readNetFromDarknet(config_path, weights_path);
+    }
+    catch (const std::exception& e) {
         m_net.reset();
         throw e;
     }
@@ -41,13 +85,8 @@ void VideoAnalyzer::analyzeFrame(const std::vector<uchar>& rgb_8bit_data, uint32
         return;
     }
 
-    const double desired_width = 416;
-    const double desired_height = 416;
-    const double width_sf = frame_width / desired_width;
-    const double height_sf = frame_height / desired_height;
-    const auto scale_factor = std::min(height_sf, width_sf);
     auto frame = cv::Mat(frame_height, frame_width, CV_8UC3, (void*)rgb_8bit_data.data());
-    auto blob = cv::dnn::blobFromImage(frame, 1.0 / 255, cv::Size(desired_width, desired_width), cv::Scalar(0, 0, 0), true, false);
+    auto blob = cv::dnn::blobFromImage(frame, 1.0 / 255, cv::Size(m_input_width, m_input_height), cv::Scalar(0, 0, 0), true, false);
 
     m_net->setInput(blob);
     auto out_layer_names = m_net->getUnconnectedOutLayersNames();

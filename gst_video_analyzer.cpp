@@ -3,7 +3,6 @@
 #endif
 
 #include <gst/gst.h>
-#include <gst/video/video.h>
 #include "gst_video_analyzer.h"
 #include "wrapper.h"
 
@@ -42,10 +41,8 @@ static void gst_video_analyzer_set_property(GObject* object, guint prop_id, cons
             g_string_assign(video_analyzer->model_path, model_path);
             auto* engine = (VideoAnalyzerWrapper*)video_analyzer->engine;
             if (engine->setModel(model_path) == FALSE) {
-                GST_DEBUG_OBJECT(video_analyzer,
-                    "Model setting failed due to: %s. Enable bypassing, "
-                    "since filter has no model now.",
-                    engine->getExceptionMessage());
+                GST_DEBUG_OBJECT(
+                    video_analyzer, "Model setting failed due to: %s. Analyzer does nothing, since has no model now.", engine->getExceptionMessage());
                 video_analyzer->draw_detections = FALSE;
             }
             break;
